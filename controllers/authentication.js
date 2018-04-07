@@ -12,6 +12,29 @@ function tokenForUser(user) {
   return jwt.encode({ sub: user.id, iat: timestamp }, config.secret);
 }
 
+exports.signin = function (req, res, next) {
+  // At this point the user already had their email and password
+  // authenticated and now it is time to give them a token.
+
+  res.send({ token: tokenForUser(req.user) });
+
+  /* 
+    in passport.js file - see last line in the comment
+    User.findOne({ email: email }, function (err, user) {
+    .
+    .
+    .
+      user.comparePassword(password, function (err, isMatch) {
+        if (err) { return done(err); }
+  
+        if (!isMatch) { return done(null, false); }
+  
+        return done(null, user);  // HERE user is assigned to req.user
+  
+    }); 
+  */
+}
+
 exports.signup = function (req, res, next) {
 
   const email = req.body.email;

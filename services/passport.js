@@ -15,11 +15,29 @@ const LocalStrategy = require('passport-local');
 // email and password and hands in to
 // the callback email and password
 const localOptions = { usernameField: 'email' };
-const localLogin = new LocalStrategy({}, function (email, password, done) {
-  // Verify this username and password, call done with the user
-  // if it is the correct username and password
+const localLogin = new LocalStrategy(localOptions, function (email, password, done) {
+  // Verify this email and password, call done with the user
+  // if it is the correct email and password
   // otherwise, call done with false.
+  User.findOne({ email: email }, function (err, user) {
+    if (err) { return done(err); }
 
+    if (!user) { return done(null, false); }
+
+    // Compare passwords - is the password entered
+    // equal to the one in the database which is
+    // user.password.
+    // comparePassword is created in user.js:
+    // userSchema.methods.comparePassword...
+    user.comparePassword(password, function (err, isMatch) {
+      if (err) { return done(err); }
+
+      if (!isMatch) { return done(null, false); }
+
+      return done(null, user);
+
+    });
+  })
 });
 
 // Setup options for JWT strategy
@@ -32,12 +50,15 @@ const jwtOptions = {
   secretOrKey: config.secret
 };
 
-// Create JWT strategy
+// To authenticate a request for a secured resource,
+// the token needs to be verified. This process uses the
+// passport jwt strategy.
+// We need to create a JWT strategy.
 // payload parameter is the object with sub and iat in
 // jwt.encode({ sub: user.id, iat: timestamp }
-// which is located in function tokenForUser(user) and which
+// which is located in 'function tokenForUser(user)' and which
 // is located in in authentication.js file.
-// strategy in passport.js is attempt to authenticate a user
+// A strategy in passport.js means to attempt to authenticate a user
 // in a very particular fashion.
 const jwtLogin = new JwtStrategy(jwtOptions, function (payload, done) {
   // See if the user ID in the payload exists in our database
@@ -54,5 +75,6 @@ const jwtLogin = new JwtStrategy(jwtOptions, function (payload, done) {
   });
 });
 
-// Tell passport to use this strategy
+// Tell passport to use these strategies.
 passport.use(jwtLogin);
+passport.use(localLogin);
